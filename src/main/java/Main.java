@@ -19,7 +19,8 @@ public class Main {
 	private static void sendAPIReq() {
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
-			.url("https://umd.instructure.com/files")
+			.method("GET", null)
+			.url("https://umd.instructure.com/api/v1/courses")
 			.header("Authorization", "Bearer " + getKey())
 			.build();
 
