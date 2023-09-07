@@ -20,11 +20,11 @@ public class Main {
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
 			.url("https://umd.instructure.com/files")
-			.header("Authorization:", "Bearer " + getKey())
+			.header("Authorization", "Bearer " + getKey())
 			.build();
 
 		try {
-			Response response = client.newCall(request).execute();
+			Response response = client.newCall(request).execu   te();
 			if (response.isSuccessful()) {
 				String responseBody = response.body().string();
 				System.out.println("API Response: " + responseBody);
