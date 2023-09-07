@@ -24,7 +24,7 @@ public class Main {
 			.build();
 
 		try {
-			Response response = client.newCall(request).execu   te();
+			Response response = client.newCall(request).execute();
 			if (response.isSuccessful()) {
 				String responseBody = response.body().string();
 				System.out.println("API Response: " + responseBody);
