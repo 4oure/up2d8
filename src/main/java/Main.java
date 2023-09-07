@@ -1,12 +1,14 @@
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+
 import com.google.gson.*;
 
 public class Main {
@@ -22,7 +24,8 @@ public class Main {
 		OkHttpClient client = new OkHttpClient();
 		Request request = new Request.Builder()
 			.method("GET", null)
-			.url("https://umd.instructure.com/api/v1/courses")
+			//.url("https://umd.instructure.com/api/v1/courses")
+			.url("https://umd.instructure.com/api/v1/courses/1354011/folders")
 			.header("Authorization", "Bearer " + getKey())
 			.build();
 
@@ -30,28 +33,27 @@ public class Main {
 			Response response = client.newCall(request).execute();
 			if (response.isSuccessful()) {
 				String responseBody = response.body().string();
-			//	System.out.println("API Response: " + responseBody);
+				//	System.out.println("API Response: " + responseBody);
 				Gson gson = new Gson();
 				List<JsonObject> myObjects = new ArrayList<>();
 				JsonElement e = JsonParser.parseString(responseBody);
-				if(e.isJsonArray()){
-				JsonArray array = 	e.getAsJsonArray();
+				if (e.isJsonArray()) {
+					JsonArray array = e.getAsJsonArray();
 
-				for(JsonElement element : array){
-					JsonObject  myObj = gson.fromJson(element, JsonObject.class);
+					for (JsonElement element : array) {
+						JsonObject myObj = gson.fromJson(element, JsonObject.class);
+						myObjects.add(myObj);
+
+					}
+				} else if (e.isJsonObject()) {
+					JsonObject myObj = gson.fromJson(e, JsonObject.class);
 					myObjects.add(myObj);
-
 				}
-				} else if(e.isJsonObject()){
-					JsonObject myObj = gson.fromJson(e,JsonObject.class);
-					myObjects.add(myObj);
+				for (JsonObject obj : myObjects) {
+					String prettyJson = gson.toJson(obj);
+					System.out.println(prettyJson);
 				}
-				for(JsonObject obj: myObjects){
-					System.out.println(obj);
-				}
-			}
-
-			else {
+			} else {
 				System.out.println("Failed, code: " + response.code());
 			}
 
