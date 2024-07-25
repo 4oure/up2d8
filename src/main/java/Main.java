@@ -136,8 +136,8 @@ public class Main {
 	}
 
 	private static String getKey() {
-		ClassLoader cl = Main.class.getClassLoader();
-		InputStream is = cl.getResourceAsStream("config.json");
+		ClassLoader classLoader = Main.class.getClassLoader();
+		InputStream inputStream = classLoader.getResourceAsStream("config.json");
 		if (is != null) {
 			try {
 				int data;
