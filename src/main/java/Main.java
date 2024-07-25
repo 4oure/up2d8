@@ -3,88 +3,139 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 
 import com.google.gson.*;
 
 public class Main {
 
-	public static void main(String[] args) {
+	private static final OkHttpClient client = new OkHttpClient();
+	private static final Gson gson = new Gson();
 
+	public static void main(String[] args) {
 		String key = getKey();
 		System.out.println("Beginning program with key found: " + key);
-		sendAPIReq();
-
+		List<JsonObject> courses = getCourses(key);
+		if (courses != null) {
+			for (JsonObject course : courses) {
+				String courseId = course.get("id").getAsString();
+				List<JsonObject> folders = getFolders(courseId, key);
+				if (folders != null) {
+					for (JsonObject folder : folders) {
+						String folderId = folder.get("id").getAsString();
+						List<JsonObject> files = getFiles(courseId, folderId, key);
+						if (files != null) {
+							downloadFiles(files, key);
+						}
+					}
+				}
+			}
+		}
 	}
 
+	private static List<JsonObject> getCourses(String apiKey) {
+		return getPagedResponse("https://umd.instructure.com/api/v1/courses", apiKey);
+	}
 
-	private static void sendAPIReq() {
-		OkHttpClient client = new OkHttpClient();
-		Request request = new Request.Builder()
-			.method("GET", null)
-			.url("https://umd.instructure.com/api/v1/courses")
-			//.url("https://umd.instructure.com/api/v1/courses/1354011/folders")
-			.header("Authorization", "Bearer " + getKey())
-			.build();
+	private static List<JsonObject> getFolders(String courseId, String apiKey) {
+		return getPagedResponse("https://umd.instructure.com/api/v1/courses/" + courseId + "/folders", apiKey);
+	}
 
-		try {
-			Response response = client.newCall(request).execute();
-			if (response.isSuccessful()) {
-				String responseBody = response.body().string();
-				//	System.out.println("API Response: " + responseBody);
-				Gson gson = new Gson();
-				List<JsonObject> myObjects = new ArrayList<>();
-				JsonElement e = JsonParser.parseString(responseBody);
-				if (e.isJsonArray()) {
-					JsonArray array = e.getAsJsonArray();
+	private static List<JsonObject> getFiles(String courseId, String folderId, String apiKey) {
+		return getPagedResponse("https://umd.instructure.com/api/v1/folders/" + folderId + "/files", apiKey);
+	}
 
-					for (JsonElement element : array) {
-						JsonObject myObj = gson.fromJson(element, JsonObject.class);
-						myObjects.add(myObj);
+	private static List<JsonObject> getPagedResponse(String url, String apiKey) {
+		List<JsonObject> results = new ArrayList<>();
+		while (url != null) {
+			Request request = new Request.Builder()
+					.url(url)
+					.header("Authorization", "Bearer " + apiKey)
+					.build();
 
+			try (Response response = client.newCall(request).execute()) {
+				if (response.isSuccessful()) {
+					String responseBody = response.body().string();
+					JsonElement e = JsonParser.parseString(responseBody);
+					if (e.isJsonArray()) {
+						List<JsonObject> pageResults = gson.fromJson(e, new TypeToken<List<JsonObject>>(){}.getType());
+						results.addAll(pageResults);
+					} else {
+						System.out.println("Unexpected response format");
+						return null;
 					}
-				} else if (e.isJsonObject()) {
-					JsonObject myObj = gson.fromJson(e, JsonObject.class);
-					myObjects.add(myObj);
+
+					// Check for pagination
+                    url = getNextPageUrl(response);
+				} else {
+					System.out.println("Failed to retrieve data, code: " + response.code());
+					return null;
 				}
-				for (JsonObject obj : myObjects) {
-					String prettyJson = gson.toJson(obj);
-					System.out.println(prettyJson);
-					Course course = gson.fromJson(obj, Course.class);
-					System.out.println("Course name: " + course.getName());
-					System.out.println(course.getAccount_id());
+			} catch (IOException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		return results;
+	}
+
+	private static String getNextPageUrl(Response response) {
+		String linkHeader = response.header("Link");
+		if (linkHeader != null) {
+			String[] links = linkHeader.split(",");
+			for (String link : links) {
+				String[] parts = link.split(";");
+				if (parts.length > 1 && parts[1].contains("rel=\"next\"")) {
+					return parts[0].replaceAll("<|>", "").trim();
+				}
+			}
+		}
+		return null;
+	}
+
+	private static void downloadFiles(List<JsonObject> files, String apiKey) {
+		for (JsonObject file : files) {
+			if (file.has("url") && file.has("display_name")) {
+				String url = file.get("url").getAsString();
+				String filename = file.get("display_name").getAsString();
+				if (url != null && !url.isEmpty()) {
+					Request request = new Request.Builder()
+							.url(url)
+							.header("Authorization", "Bearer " + apiKey)
+							.build();
+
+					try (Response response = client.newCall(request).execute()) {
+						if (response.isSuccessful()) {
+							try (InputStream in = response.body().byteStream();
+								 FileOutputStream out = new FileOutputStream(filename)) {
+								byte[] buffer = new byte[4096];
+								int bytesRead;
+								while ((bytesRead = in.read(buffer)) != -1) {
+									out.write(buffer, 0, bytesRead);
+								}
+								System.out.println("Downloaded file: " + filename);
+							}
+						} else {
+							System.out.println("Failed to download file: " + filename);
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} else {
+					System.out.println("Invalid URL for file: " + filename);
 				}
 			} else {
-				System.out.println("Failed, code: " + response.code());
+				System.out.println("File object missing required fields");
 			}
-
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
 	private static String getKey() {
-//		StringBuilder sb = new StringBuilder();
-//		try {
-//			File myFile = new File("/Users/gavin/eclipse-workspace/up2d8/key.txt");
-//			Scanner scanner = new Scanner(myFile);
-//			while (scanner.hasNext()) {
-//				sb.append(scanner.next());
-//			}
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		}
-//
-//		return sb.toString();
-
 		ClassLoader cl = Main.class.getClassLoader();
 		InputStream is = cl.getResourceAsStream("config.json");
 		if (is != null) {
@@ -95,9 +146,7 @@ public class Main {
 					sb.append((char) data);
 				}
 				String configData = sb.toString();
-				Gson g = new Gson();
-				Map<String, String> keyMap = g.fromJson(configData, new TypeToken<Map<String, String>>() {
-				}.getType());
+				Map<String, String> keyMap = gson.fromJson(configData, new TypeToken<Map<String, String>>() {}.getType());
 				return keyMap.get("canvas_api_key");
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -115,4 +164,3 @@ public class Main {
 		return "";
 	}
 }
-
