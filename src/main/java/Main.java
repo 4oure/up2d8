@@ -138,11 +138,11 @@ public class Main {
 	private static String getKey() {
 		ClassLoader classLoader = Main.class.getClassLoader();
 		InputStream inputStream = classLoader.getResourceAsStream("config.json");
-		if (is != null) {
+		if (inputStream != null) {
 			try {
 				int data;
 				StringBuilder sb = new StringBuilder();
-				while ((data = is.read()) != -1) {
+				while ((data = inputStream.read()) != -1) {
 					sb.append((char) data);
 				}
 				String configData = sb.toString();
@@ -152,7 +152,7 @@ public class Main {
 				e.printStackTrace();
 			} finally {
 				try {
-					is.close();
+					inputStream.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 					throw new RuntimeException(e);
