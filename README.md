@@ -1,9 +1,5 @@
 # up2d8: Effortlessly Sync Your Canvas Creations
 
-[![Build Status](https://github.com/4oure/up2d8/actions/workflows/build.yml/badge.svg)](https://github.com/4oure/up2d8/actions)
-[![Maintainability](https://api.codeclimate.com/v1/repos/4oure/up2d8/badges/maintainability)](https://api.codeclimate.com/v1/repos/4oure/up2d8/maintainability)
-[![Coverage](https://coveralls.io/repos/github/4oure/up2d8/badge.svg?branch=master)](https://coveralls.io/github/4oure/up2d8)
-
 **up2d8** streamlines your canvas workflow by automatically syncing your creations across devices.   ↔️ ☁️
 
 ## What is up2d8?
