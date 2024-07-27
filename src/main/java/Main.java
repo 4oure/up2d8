@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.JarFile;
 
 import com.google.gson.*;
 
@@ -24,24 +23,37 @@ public class Main {
     public static void main(String[] args) {
         String key = getKey();
         System.out.println("Beginning program with key found: " + key);
+
         File downloadDir = chooseDownloadDirectory();
         if (downloadDir != null) {
-            List<JsonObject> courses = getCourses(key);
-            if (courses != null) {
-                for (JsonObject course : courses) {
-                    String courseId = course.get("id").getAsString();
-                    List<JsonObject> folders = getFolders(courseId, key);
-                    if (folders != null) {
-                        for (JsonObject folder : folders) {
-                            String folderId = folder.get("id").getAsString();
-                            List<JsonObject> files = getFiles(courseId, folderId, key);
-                            if (files != null) {
-                                downloadFiles(files, downloadDir, key);
-                            }
-                        }
-                    }
-                }
+            processCourses(key, downloadDir);
+        }
+    }
+
+    private static void processCourses(String key, File downloadDir) {
+        List<JsonObject> courses = getCourses(key);
+        if (courses != null) {
+            for (JsonObject course : courses) {
+                String courseID = course.get("id").getAsString();
+                processFolders(courseID, key, downloadDir);
             }
+        }
+    }
+
+    private static void processFolders(String courseID, String key, File downloadDir) {
+        List<JsonObject> folders = getFolders(courseID, key);
+        if(folders != null){
+            for(JsonObject folder : folders){
+                String folderID = folder.get("id").getAsString();
+                processFiles(courseID, folderID, key, downloadDir);
+            }
+        }
+    }
+
+    private static void processFiles(String courseID, String folderID, String key, File downloadDir){
+        List<JsonObject> files = getFiles(courseID, folderID, key);
+        if(files != null){
+            downloadFiles(files, downloadDir, key);
         }
     }
 
