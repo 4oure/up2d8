@@ -22,8 +22,6 @@ up2d8 is a Java-based file synchronization service specifically designed for can
 
 2. **Installation:**
 
-   There are two ways to get started with up2d8:
-
    * **Clone the repository:**
 
      ```bash
