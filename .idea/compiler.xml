@@ -9,5 +9,8 @@
         <module name="up2d8" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name=".idea" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
 </project>
